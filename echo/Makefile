@@ -15,4 +15,4 @@ csapp.o: ../csapp.c ../csapp.h
 	$(CC) $(CFLAGS) -c ../csapp.c
 
 clean:
-	rm -f *.o echoserver echo *~
+	rm -f *.o echoserver echoclient echo *~
