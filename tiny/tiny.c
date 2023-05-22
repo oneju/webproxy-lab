@@ -52,30 +52,27 @@ void doit(int fd)
   Rio_readlineb(&rio,buf,MAXLINE);
   printf("Requestheaders:\n"); 
   printf("%s",buf); 
-  sscanf(buf,"%s%s%s",method,uri,version); 
+  sscanf(buf,"%s %s %s",method,uri,version); 
   if(strcasecmp(method,"GET")){ 
-    clienterror(fd,method,"501","Notimplemented", 
-    "Tinydoesnotimplementthismethod"); 
+    clienterror(fd,method,"501","Not implemented", "Tiny does not implement this method"); 
     return; 
     } 
     read_requesthdrs(&rio); 
     /*ParseURIfromGETrequest*/ 
     is_static=parse_uri(uri,filename,cgiargs); 
     if(stat(filename,&sbuf)<0){ 
-      clienterror(fd,filename,"404","Notfound", 
-      "Tinycouldn’tfindthisfile"); 
+      clienterror(fd,filename,"404","Notfound", "Tiny couldn’t find this file"); 
       return; 
       }  
       if(is_static){/*Servestaticcontent*/ 
         if(!(S_ISREG(sbuf.st_mode))||!(S_IRUSR & sbuf.st_mode)){ 
-          clienterror(fd,filename,"403","Forbidden","Tinycouldn’treadthefile"); 
+          clienterror(fd,filename,"403","Forbidden","Tiny couldn’t read the file"); 
           return; 
         } 
         serve_static(fd,filename,sbuf.st_size); 
         }else{/*Servedynamiccontent*/ 
         if(!(S_ISREG(sbuf.st_mode))||!(S_IXUSR & sbuf.st_mode)){ 
-          clienterror(fd,filename,"403","Forbidden", 
-          "Tinycouldn’truntheCGIprogram"); 
+          clienterror(fd,filename,"403","Forbidden", "Tiny couldn’t run the CGI program"); 
           return; 
           } 
   serve_dynamic(fd,filename,cgiargs); 
@@ -165,7 +162,7 @@ void get_filetype(char *filename, char *filetype)
   else if (strstr(filename, ".png"))
     strcpy(filetype, "image/png");
   else if (strstr(filename, ".jpg"))
-    strcpy(filetype, "image/jpg");
+    strcpy(filetype, "image/jepg");
   else  strcpy(filetype, "text/plain");
 }
 void serve_dynamic(int fd, char *filename, char *cgiargs)
