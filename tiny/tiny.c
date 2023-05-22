@@ -47,7 +47,7 @@ void doit(int fd)
   char filename[MAXLINE],cgiargs[MAXLINE]; 
   rio_t rio; 
 
-  /*Readrequestlineandheaders*/ 
+  /*Read request line and headers*/ 
   Rio_readinitb(&rio,fd); 
   Rio_readlineb(&rio,buf,MAXLINE);
   printf("Requestheaders:\n"); 
@@ -58,19 +58,19 @@ void doit(int fd)
     return; 
     } 
     read_requesthdrs(&rio); 
-    /*ParseURIfromGETrequest*/ 
+    /*Parse URI from GET request*/ 
     is_static=parse_uri(uri,filename,cgiargs); 
     if(stat(filename,&sbuf)<0){ 
       clienterror(fd,filename,"404","Notfound", "Tiny couldn’t find this file"); 
       return; 
       }  
-      if(is_static){/*Servestaticcontent*/ 
+      if(is_static){/*Serve static content*/ 
         if(!(S_ISREG(sbuf.st_mode))||!(S_IRUSR & sbuf.st_mode)){ 
           clienterror(fd,filename,"403","Forbidden","Tiny couldn’t read the file"); 
           return; 
         } 
         serve_static(fd,filename,sbuf.st_size); 
-        }else{/*Servedynamiccontent*/ 
+        }else{/*Serve dynamic content*/ 
         if(!(S_ISREG(sbuf.st_mode))||!(S_IXUSR & sbuf.st_mode)){ 
           clienterror(fd,filename,"403","Forbidden", "Tiny couldn’t run the CGI program"); 
           return; 
@@ -152,7 +152,7 @@ void serve_static(int fd, char *filename, int filesize)
   Rio_writen(fd, srcp, filesize);
   Munmap(srcp, filesize);
 }
-/* get_filetype-Derivefiletypefromfilename */
+/* get_filetype-Derive filetype from filename */
 void get_filetype(char *filename, char *filetype)
 {
   if (strstr(filename, ".html"))
