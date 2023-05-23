@@ -11,9 +11,9 @@
 void doit(int fd);
 void read_requesthdrs(rio_t *rp);
 int parse_uri(char *uri, char *filename, char *cgiargs);
-void serve_static(int fd, char *filename, int filesize);
+void serve_static(int fd, char *filename, int filesize, char *method);
 void get_filetype(char *filename, char *filetype);
-void serve_dynamic(int fd, char *filename, char *cgiargs);
+void serve_dynamic(int fd, char *filename, char *cgiargs, char *method);
 void clienterror(int fd, char *cause, char *errnum, char *shortmsg, char *longmsg);
 
 int main(int argc, char **argv) {
@@ -53,29 +53,29 @@ void doit(int fd)
   printf("Requestheaders:\n"); 
   printf("%s",buf); 
   sscanf(buf,"%s %s %s",method,uri,version); 
-  if(strcasecmp(method,"GET")){ 
+  /* 11.11 HEAD 추가 */
+  if(!strcasecmp(method,"GET") && !strcasecmp(method,"HEAD")){ 
     clienterror(fd,method,"501","Not implemented","Tiny does not implement this method"); 
     return; 
-    } 
-    read_requesthdrs(&rio); 
-    /*Parse URI from GET request*/ 
-    is_static=parse_uri(uri,filename,cgiargs); 
-    if(stat(filename,&sbuf)<0){ 
-      clienterror(fd,filename,"404","Notfound","Tiny couldn’t find this file"); 
+  } 
+  read_requesthdrs(&rio); 
+  /*Parse URI from GET request*/ 
+  is_static=parse_uri(uri,filename,cgiargs); 
+  if(stat(filename,&sbuf)<0){ 
+    clienterror(fd,filename,"404","Notfound","Tiny couldn’t find this file"); 
+    return; 
+  }if(is_static){/*Serve static content*/ 
+    if(!(S_ISREG(sbuf.st_mode))||!(S_IRUSR & sbuf.st_mode)){ 
+      clienterror(fd,filename,"403","Forbidden","Tiny couldn’t read the file"); 
       return; 
-      }  
-      if(is_static){/*Serve static content*/ 
-        if(!(S_ISREG(sbuf.st_mode))||!(S_IRUSR & sbuf.st_mode)){ 
-          clienterror(fd,filename,"403","Forbidden","Tiny couldn’t read the file"); 
-          return; 
-        } 
-        serve_static(fd,filename,sbuf.st_size); 
-        }else{/*Serve dynamic content*/ 
-        if(!(S_ISREG(sbuf.st_mode))||!(S_IXUSR & sbuf.st_mode)){ 
-          clienterror(fd,filename,"403","Forbidden","Tiny couldn’t run the CGI program"); 
-          return; 
-          } 
-  serve_dynamic(fd,filename,cgiargs); 
+    } 
+    serve_static(fd,filename,sbuf.st_size,method); 
+  }else{/*Serve dynamic content*/ 
+    if(!(S_ISREG(sbuf.st_mode))||!(S_IXUSR & sbuf.st_mode)){ 
+      clienterror(fd,filename,"403","Forbidden","Tiny couldn’t run the CGI program"); 
+      return; 
+    } 
+  serve_dynamic(fd,filename,cgiargs,method); 
   }
 }
 void clienterror(int fd, char *cause, char *errnum, char *shortmsg,char *longmsg)
@@ -130,7 +130,7 @@ int parse_uri(char *uri, char *filename, char *cgiargs)
     return 0;
   }
 }
-void serve_static(int fd, char *filename, int filesize)
+void serve_static(int fd, char *filename, int filesize, char *method)
 {
   int srcfd;
   char *srcp,filetype[MAXLINE], buf[MAXBUF];
@@ -144,21 +144,24 @@ void serve_static(int fd, char *filename, int filesize)
   Rio_writen(fd, buf, strlen(buf));
   printf("Response headers:\n");
   printf("%s", buf);
-
-  /* Send response body to client */
-  srcfd = Open(filename, O_RDONLY, 0);
-  //srcp = Mmap(0, filesize, PROT_READ, MAP_PRIVATE, srcfd, 0);
   
-  /* 11.9 mmap -> malloc, rio_readn */
-  /* mmap : memory mapping 메모리의 특정 공간에 파일을 매핑한다 */
-  srcp = (char *)malloc(filesize);
-  Rio_readn(srcfd, srcp, filesize);
-  
-  Close(srcfd); 
-  Rio_writen(fd, srcp, filesize);
-  
-  //Munmap(srcp, filesize);
-  free(srcp);
+  if (strcasecmp(method,"GET")==0)
+  {  
+    /* Send response body to client */
+    srcfd = Open(filename, O_RDONLY, 0);
+    //srcp = Mmap(0, filesize, PROT_READ, MAP_PRIVATE, srcfd, 0);
+    
+    /* 11.9 mmap -> malloc, rio_readn */
+    /* mmap : memory mapping 메모리의 특정 공간에 파일을 매핑한다 */
+    srcp = (char *)malloc(filesize);
+    Rio_readn(srcfd, srcp, filesize);
+    
+    Close(srcfd); 
+    Rio_writen(fd, srcp, filesize);
+    
+    //Munmap(srcp, filesize);
+    free(srcp);
+  }
 }
 /* get_filetype-Derive filetype from filename */
 void get_filetype(char *filename, char *filetype)
@@ -178,7 +181,7 @@ void get_filetype(char *filename, char *filetype)
     strcpy(filetype, "video/mp4");
   else  strcpy(filetype, "text/plain");
 }
-void serve_dynamic(int fd, char *filename, char *cgiargs)
+void serve_dynamic(int fd, char *filename, char *cgiargs, char *method)
 {
   char buf[MAXLINE],*emptylist[] = {NULL};
   /* Return first part of HTTP response */
@@ -190,6 +193,7 @@ void serve_dynamic(int fd, char *filename, char *cgiargs)
   if(Fork() == 0){/* Child */
     /* Real server would set all CGI vars here */
     setenv("QUERY_STRING",cgiargs, 1);
+    setenv("METHOD",method, 1);
     Dup2(fd, STDOUT_FILENO);              /* Redirect stdout to client */
     Execve(filename, emptylist, environ); /* Run CGI program */
   }
