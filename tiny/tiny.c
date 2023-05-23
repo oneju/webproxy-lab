@@ -193,6 +193,7 @@ void serve_dynamic(int fd, char *filename, char *cgiargs, char *method)
   if(Fork() == 0){/* Child */
     /* Real server would set all CGI vars here */
     setenv("QUERY_STRING",cgiargs, 1);
+    /* adder.c에 method 전달 */
     setenv("METHOD",method, 1);
     Dup2(fd, STDOUT_FILENO);              /* Redirect stdout to client */
     Execve(filename, emptylist, environ); /* Run CGI program */
