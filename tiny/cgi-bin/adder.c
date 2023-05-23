@@ -20,7 +20,7 @@ int main(void) {
 
   /* Make the response body */
   // server 실행 후 진행
-  // sprintf (body,""); -> body에 값을 넣겠다
+  // sprintf (body,"%s",a); -> body에 a값을 넣겠다
   sprintf(content, "QUERY_STRING=%s", buf);
   sprintf(content, "Welcome to add.com: ");
   sprintf(content, "%sTHE Internet addition portal.\r\n<p>",content);

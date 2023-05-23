@@ -1,10 +1,20 @@
 <html>
-<head><title>test</title></head>
+<head>
+    <title>test</title>
+    <script>
+        function add(){
+            let num1 = document.getElementById("num1").value;
+            let num2 = document.getElementById("num2").value;
+            document.location.href=`./cgi-bin/adder?${num1}&${num2}`;
+        }
+    </script>
+</head>
 <body> 
 <img align="middle" src="godzilla.gif">
-<video width="600px" height ="400" controls>
-    <source  src="music.mp4" ></source>
-</video>
+<video src="music.mp4" controls muted></video>
 Dave O'Hallaron
+<input id="num1">
+<input id="num2">
+<button onclick="add()">adder</button>
 </body>
 </html>
