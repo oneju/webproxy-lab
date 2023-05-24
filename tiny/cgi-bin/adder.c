@@ -8,7 +8,7 @@ int main(void) {
   char *buf, *p;
   char arg1[MAXLINE],arg2[MAXLINE],content[MAXLINE];
   int n1 = 0, n2 = 0;
-  /*Extractthetwoarguments*/
+  /* Extract the two arguments */
   if ((buf = getenv("QUERY_STRING")) != NULL){
     p = strchr(buf, '&');
     *p = '\0';
@@ -17,7 +17,7 @@ int main(void) {
     n1 = atoi(arg1);
     n2 = atoi(arg2);
   }
-
+  
   /* Make the response body */
   // server 실행 후 진행
   // sprintf (body,"%s",a); -> body에 a값을 넣겠다
@@ -31,7 +31,7 @@ int main(void) {
   printf("Connection: close\r\n");
   printf("Content-length: %d\r\n",(int)strlen(content));
   printf("Content-type: text/html\r\n\r\n");
-  if (strcasecmp(getenv("METHOD"),"GET")){
+  if (strcasecmp(getenv("METHOD"),"GET")==0){
     printf("%s",content);
   }
   fflush(stdout); // buffer에 넣어둔 값 초기화
